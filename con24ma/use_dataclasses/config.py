@@ -1,8 +1,8 @@
 import argparse
 from typing import Optional
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, replace
 
-from .field import ArgField
+from .field import ArgField, PathField
 
 
 @dataclass
@@ -29,12 +29,16 @@ class DataClassConfig:
             parser.add_argument(*dest, **af.args_add_argument(_f.type))
         return parser
     
-    @staticmethod
-    def parse_args(main_cls, input_args: Optional[str] = None):
-        parser = main_cls.get_parser()
+    @classmethod
+    def prep_parsed(cls, parsed: dict) -> dict: return parsed
+    
+    @classmethod
+    def parse_args(cls, 
+                   input_args: Optional[str] = None):
+        parser = cls.get_parser()
         parsed, remain = parser.parse_known_args(input_args)
-        parsed = vars(parsed)
-        for _f in fields(main_cls):
+        parsed = cls.prep_parsed(vars(parsed))
+        for _f in fields(cls):
             if isinstance(_f.default, DataClassConfig):
                 parsed[_f.name] = _f.default.parse_args(_f.default, remain)
-        return main_cls(**parsed)
+        return cls(**parsed)
