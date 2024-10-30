@@ -20,7 +20,8 @@ def argument_of_AP(action: Optional[str] = None,
 
 class ArgField:
 
-    def __init__(self, value, dest: Optional[Union[list[str]|str]], **kwargs):
+    def __init__(self, value, 
+                 dest: Optional[Union[list[str]|str]] = None, **kwargs):
         self.value = value
         self.dest = dest
 
@@ -31,6 +32,8 @@ class ArgField:
     def __float__(self): return float(self.value)
     
     def __int__(self): return int(self.value)
+
+    def __str__(self): return str(self.value)
 
     def get_argument(self, value_type: Type) -> dict:
         kw = self.args_add_argument
@@ -53,7 +56,7 @@ class PathField:
             if as_cfgpath: self.admin
         elif as_rootdir:
             self.admin = 'dir' 
-            
+
         self.args_add_argument = argument_of_AP(**kwargs)
 
 
