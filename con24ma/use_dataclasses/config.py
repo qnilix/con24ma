@@ -27,7 +27,7 @@ class DataClassConfig:
             dest = ['--' + _f.name.replace('_', '-')]
             if af.dest is not None:
                 dest += [af.dest] if isinstance(af.dest, str) else af.dest
-            parser.add_argument(*dest, **af.args_add_argument(_f.type))
+            parser.add_argument(*dest, **af.get_argument(_f.type))
         return parser
     
     @classmethod
