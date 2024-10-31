@@ -7,7 +7,7 @@ def _root(init: Optional[str] = None):
     if init == '~/': return pathlib.Path.home()
 
 def joindir(path: pathlib.Path, join: str, mkdir: bool = False) -> pathlib.Path:
-    path.joinpath(join)
+    path = path.joinpath(join)
     path.mkdir(parents=True, exist_ok=mkdir)
     return path
 

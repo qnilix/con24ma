@@ -11,7 +11,7 @@ class DataClassConfig:
     def __post_init__(self):
         for _f in fields(self):
             if isinstance(_f.default, ArgField):
-                setattr(self, _f.name, _f.type(_f.default))
+                setattr(self, _f.name, _f.type(_f.default.value))
 
     @classmethod
     def get_parsercls(cls, **kwargs):
