@@ -3,7 +3,9 @@ from con24ma.pathutil import getpath
 from typing import Optional as tOptional
 
 
-class _List(list):
+class _List:
+
+    def __call__(self, value) -> list: return list(value)
 
     def __getitem__(self, key: type):
         def _w(value):
@@ -13,7 +15,7 @@ class _List(list):
 
 List = _List()
 
-class _Optional(tOptional):
+class _Optional:
 
     def __getitem__(self, key: type):
         def _w(value):
