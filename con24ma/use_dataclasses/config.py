@@ -39,10 +39,11 @@ class DataClassConfig:
         parser = cls.get_parser()
         parsed, remain = parser.parse_known_args(input_args)
         parsed = cls.prep_parsed(vars(parsed))
+        kwargs.update(parsed)
         for _f in fields(cls):
             if not hasattr(_f.default_factory, 'parse_args'): continue
-            if issubclass(_f.default, DataClassConfig):
-                if _f.name in parsed.keys(): parsed.update(**parsed.pop(_f.name))
-                parsed[_f.name], remain = _f.default.parse_args(_f.default, remain)
-        temp = dict((k.name, parsed.get(k.name, kwargs.pop(k.name))) for k in fields(cls))
+            if issubclass(_f.default_factory, DataClassConfig):
+                if _f.name in kwargs.keys(): kwargs.update(**kwargs.pop(_f.name))
+                kwargs[_f.name], remain = _f.default_factory.parse_args(remain, kwargs)
+        temp = dict((k.name, kwargs.pop(k.name, k.default)) for k in fields(cls))
         return cls(**temp), remain

@@ -1,7 +1,5 @@
 from con24ma.pathutil import getpath
 
-from typing import Optional as tOptional
-
 
 class _List:
 
