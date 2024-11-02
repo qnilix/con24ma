@@ -8,10 +8,10 @@ from .field import ArgField, PathField
 @dataclass
 class DataClassConfig:
 
-    def __post_init__(self):
-        for _f in fields(self):
-            if isinstance(_f.default, ArgField):
-                setattr(self, _f.name, _f.type(_f.default.value))
+    #def __post_init__(self):
+    #    for _f in fields(self):
+    #        if isinstance(_f.default, ArgField):
+    #            setattr(self, _f.name, _f.type(_f.default.value))
 
     @classmethod
     def get_parsercls(cls, **kwargs):
@@ -34,11 +34,15 @@ class DataClassConfig:
     
     @classmethod
     def parse_args(cls, 
-                   input_args: Optional[str] = None):
+                   input_args: Optional[str] = None,
+                   kwargs: dict = {}):
         parser = cls.get_parser()
         parsed, remain = parser.parse_known_args(input_args)
         parsed = cls.prep_parsed(vars(parsed))
         for _f in fields(cls):
-            if isinstance(_f.default, DataClassConfig):
-                parsed[_f.name] = _f.default.parse_args(_f.default, remain)
-        return cls(**parsed)
+            if not hasattr(_f.default_factory, 'parse_args'): continue
+            if issubclass(_f.default, DataClassConfig):
+                if _f.name in parsed.keys(): parsed.update(**parsed.pop(_f.name))
+                parsed[_f.name], remain = _f.default.parse_args(_f.default, remain)
+        temp = dict((k.name, parsed.get(k.name, kwargs.pop(k.name))) for k in fields(cls))
+        return cls(**temp), remain
