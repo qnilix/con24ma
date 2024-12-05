@@ -37,8 +37,9 @@ class ArgField:
 
     def get_argument(self, value_type: Type) -> dict:
         kw = self.args_add_argument
-        kw['type'] = value_type
-        kw['default'] = self.value
+        if kw.get('action', '') == '':
+            kw['type'] = value_type
+            kw['default'] = self.value
         return kw
 
 

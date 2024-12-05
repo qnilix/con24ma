@@ -8,13 +8,6 @@ from .field import ArgField, DictField, PathField
 @dataclass
 class DataClassConfig:
 
-    def __post_init__(self):
-        for _f in fields(self):
-            if isinstance(_f.default, ArgField):
-                setattr(self, _f.name, _f.type(_f.default.value))
-            if isinstance(_f.default, DictField):
-                setattr(self, _f.name, _f.default.value)
-
     def asdict(self):
         temp = asdict(self)
         for k, v in temp.items():
