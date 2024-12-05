@@ -1,6 +1,6 @@
 import argparse
 from typing import Optional
-from dataclasses import dataclass, fields, replace
+from dataclasses import asdict, dataclass, fields
 
 from .field import ArgField, PathField
 
@@ -12,6 +12,12 @@ class DataClassConfig:
     #    for _f in fields(self):
     #        if isinstance(_f.default, ArgField):
     #            setattr(self, _f.name, _f.type(_f.default.value))
+
+    def asdict(self):
+        temp = asdict(self)
+        for k, v in temp.items():
+            if isinstance(v, DataClassConfig): temp[k] = asdict(v)
+        return temp
 
     @classmethod
     def get_parsercls(cls, **kwargs):
