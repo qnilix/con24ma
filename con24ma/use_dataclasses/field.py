@@ -42,6 +42,14 @@ class ArgField:
         return kw
 
 
+class DictField(ArgField):
+
+    def __init__(self, value: dict = {}, 
+                 dest: Optional[Union[list[str]|str]] = None, **kwargs):
+        super().__init__(value, dest=dest, 
+                         action='parse_kwargs', nargs = '*', **kwargs)
+
+
 class PathField:
 
     def __init__(self, value, 
@@ -69,6 +77,3 @@ def _set_value(default = None, default_factory = None, **kwargs):
 def argfield(**kwargs) -> ArgField:
     value, kwargs = _set_value(**kwargs)
     return ArgField(value, **kwargs)
-
-def parse_kwargs_field(**kwargs) -> ArgField:
-    return ArgField({}, action='parse_kwargs', nargs = '*', **kwargs)

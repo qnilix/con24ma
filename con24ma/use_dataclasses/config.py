@@ -2,16 +2,18 @@ import argparse
 from typing import Optional
 from dataclasses import asdict, dataclass, fields
 
-from .field import ArgField, PathField
+from .field import ArgField, DictField, PathField
 
 
 @dataclass
 class DataClassConfig:
 
-    #def __post_init__(self):
-    #    for _f in fields(self):
-    #        if isinstance(_f.default, ArgField):
-    #            setattr(self, _f.name, _f.type(_f.default.value))
+    def __post_init__(self):
+        for _f in fields(self):
+            if isinstance(_f.default, ArgField):
+                setattr(self, _f.name, _f.type(_f.default.value))
+            if isinstance(_f.default, DictField):
+                setattr(self, _f.name, _f.default.value)
 
     def asdict(self):
         temp = asdict(self)
@@ -27,7 +29,7 @@ class DataClassConfig:
     def get_parser(cls):
         parser = cls.get_parsercls()
         for _f in fields(cls):
-            if not isinstance(_f.default, ArgField): continue
+            if not isinstance(_f.default, (ArgField, DictField)): continue
             af = _f.default
             dest = ['--' + _f.name.replace('_', '-')]
             if af.dest is not None:
