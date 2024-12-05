@@ -66,6 +66,9 @@ def _set_value(default = None, default_factory = None, **kwargs):
     return None, kwargs
 
 
-def argfield(**kwargs):
+def argfield(**kwargs) -> ArgField:
     value, kwargs = _set_value(**kwargs)
     return ArgField(value, **kwargs)
+
+def parse_kwargs_field(**kwargs) -> ArgField:
+    return ArgField({}, action='parse_kwargs', nargs = '*', **kwargs)
