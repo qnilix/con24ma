@@ -1,5 +1,5 @@
 import argparse
-from typing import Optional
+from typing import Optional, Self
 from dataclasses import asdict, dataclass, fields
 
 from .field import ArgField, DictField, PathField
@@ -9,12 +9,18 @@ from .field import ArgField, DictField, PathField
 class BaseConfig:
 
     @classmethod
-    def safe_build(cls, return_unused_kwargs: bool = False, **kwargs):
+    def safe_build(cls, return_unused_kwargs: bool = True, **kwargs) -> tuple[Self, dict]:
         safe_kwargs = dict()
         for _f in fields(cls):
             n = _f.name
             if n in kwargs.keys(): safe_kwargs[n] = kwargs.pop(n)
-        return cls(**safe_kwargs)
+        return cls(**safe_kwargs), kwargs
+    
+    def asdict(self):
+        temp = asdict(self)
+        for k, v in temp.items():
+            if isinstance(v, DataClassConfig): temp[k] = asdict(v)
+        return temp
 
 
 @dataclass

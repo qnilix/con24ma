@@ -35,11 +35,13 @@ class Config:
 ```
 
 #### Parameters
+
 - `value`: Default value for the field
 - `dest`: Custom argument name(s) - can be string or list of strings
 - `**kwargs`: Additional argparse arguments (action, nargs, const, choices, required, help, metavar)
 
 #### Magic Methods
+
 - `__bool__()`, `__float__()`, `__int__()`, `__str__()`: Type conversion support
 
 ### `DictField`
