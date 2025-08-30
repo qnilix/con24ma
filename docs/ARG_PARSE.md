@@ -1,25 +1,25 @@
 # ArgumentParser Kwargs Extension
 
-A Python utility for easily parsing keyword arguments (kwargs) from command-line arguments.
+A Python utility for parsing keyword arguments (kwargs) from command-line arguments in `key=value` format.
 
 ## Overview
 
-This module extends argparse to provide functionality for parsing command-line arguments in `key=value` format into dictionaries. It's particularly useful when you need to dynamically pass multiple parameters to your application.
+This module extends argparse to provide functionality for parsing command-line arguments in `key=value` format into dictionaries. It's particularly useful when you need to dynamically pass multiple parameters to your application without predefining every possible argument.
 
 ## Features
 
-- Automatically converts `key=value` format arguments into dictionaries
-- Automatic type inference for values (numbers, booleans, strings, etc.)
-- Seamless integration with argparse
-- Simple and intuitive API
+- **Key-Value Parsing**: Converts `key=value` format arguments into dictionaries
+- **Automatic Type Inference**: Smart conversion of values to appropriate Python types (numbers, booleans, strings, etc.)
+- **Seamless Integration**: Works naturally with argparse's existing functionality
+- **Simple API**: Intuitive interface that requires minimal configuration
 
 ## Usage
 
-### Basic Usage
+### Basic Setup
 
-```python:script.py
+```python
 import argparse
-from your_module import opt_action
+from con24ma.action import opt_action
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -38,84 +38,137 @@ print(args.config)
 ```bash
 # Basic usage
 python script.py --config name=test age=25 active=True
-
 # Result: {'name': 'test', 'age': 25, 'active': True}
-```
 
-```bash
-# Mixed types
+# Mixed data types
 python script.py --config host=localhost port=8080 debug=False timeout=30.5
-
 # Result: {'host': 'localhost', 'port': 8080, 'debug': False, 'timeout': 30.5}
+
+# Complex data structures
+python script.py --config "items=[1,2,3]" "metadata={\"version\":\"1.0\"}"
+# Result: {'items': [1, 2, 3], 'metadata': {'version': '1.0'}}
 ```
 
 ### Complete Example
 
 ```python
 import argparse
-from your_module import opt_action
+from con24ma.action import opt_action
 
 def main():
-    parser = argparse.ArgumentParser(description='Example with kwargs parsing')
-    parser.add_argument('--params', nargs='*', action=opt_action('parse_kwargs'))
+    parser = argparse.ArgumentParser(description='Application with dynamic configuration')
+    
+    # Regular arguments
+    parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose output')
+    
+    # Dynamic configuration parameters
+    parser.add_argument('--params', nargs='*', action=opt_action('parse_kwargs'),
+                       help='Additional parameters in key=value format')
     
     args = parser.parse_args()
     
+    if args.verbose:
+        print("Verbose mode enabled")
+    
     if args.params:
-        print("Parsed parameters:")
+        print("Configuration parameters:")
         for key, value in args.params.items():
             print(f"  {key}: {value} (type: {type(value).__name__})")
+    else:
+        print("No configuration parameters provided")
 
 if __name__ == '__main__':
     main()
 ```
 
+### Running the Example
+
+```bash
+python example.py --verbose --params host=localhost port=8080 debug=True
+
+#Output:
+Verbose mode enabled
+Configuration parameters:
+  host: localhost (type: str)
+  port: 8080 (type: int)
+  debug: True (type: bool)
+```
+
 ## Type Conversion
 
-The module automatically recognizes the following types:
+The module automatically recognizes and converts the following Python literal types:
 
-- **Integers**: `42` → `42` (int)
-- **Floats**: `3.14` → `3.14` (float)  
-- **Booleans**: `True`, `False` → `True`, `False` (bool)
-- **Lists**: `[1,2,3]` → `[1, 2, 3]` (list)
-- **Dictionaries**: `{"key":"value"}` → `{"key": "value"}` (dict)
-- **Strings**: Everything else → kept as string
+| Input Format | Python Type | Example |
+|--------------|-------------|---------|
+| `42` | `int` | `42` |
+| `3.14` | `float` | `3.14` |
+| `True`, `False` | `bool` | `True`, `False` |
+| `[1,2,3]` | `list` | `[1, 2, 3]` |
+| `{"key":"value"}` | `dict` | `{"key": "value"}` |
+| `(1,2)` | `tuple` | `(1, 2)` |
+| `None` | `NoneType` | `None` |
+| Everything else | `str` | `"text"` |
 
 ## API Reference
 
 ### `opt_action(key: str)`
 
-Action factory function.
+Factory function that returns the appropriate action class for the given key.
 
 **Parameters:**
 
-- `key`: Action name. When `'parse_kwargs'` is specified, returns the `ParseKwargs` action
+- `key` (str): The action identifier. Use `'parse_kwargs'` to get the kwargs parsing action.
 
 **Returns:**
 
-- Action class corresponding to the specified key
+- Action class for use with argparse, or the original key if no special action is found.
+
+**Example:**
+
+```python
+action = opt_action('parse_kwargs')  # Returns ParseKwargs class
+parser.add_argument('--config', nargs='*', action=action)
+```
 
 ### `ParseKwargs`
 
-Custom action class that inherits from argparse.Action.
+Custom argparse Action class that handles kwargs parsing.
 
-**Functionality:**
+**Inherits from:** `argparse.Action`
 
-- Converts a list of `key=value` strings into a dictionary
-- Safe type conversion using `ast.literal_eval()`
-- Falls back to string if conversion fails
+**Behavior:**
 
-## Notes
+- Expects a list of `key=value` strings as input
+- Splits each string on the first `=` character
+- Attempts type conversion using `ast.literal_eval()`
+- Falls back to string type if conversion fails
+- Sets the parsed dictionary as the argument value
 
-- Wrap values containing spaces in quotes: `name="John Doe"`
-- Complex data structures (nested dictionaries, etc.) are supported, but be careful with shell escaping
-- For security, uses `ast.literal_eval()` so executable code is not evaluated
+## Integration with DataClass Configuration
+
+This module is designed to work seamlessly with the broader configuration system:
+
+```python
+from dataclasses import dataclass
+from con24ma import DataClassConfig, DictField
+
+@dataclass
+class AppConfig(DataClassConfig):
+    # Automatically uses ParseKwargs action
+    runtime_config: dict = DictField(help="Runtime configuration parameters")
+
+# Usage
+config, remaining = AppConfig.parse_args()
+# Command: python app.py --runtime-config host=localhost port=8080
+```
 
 ## Requirements
 
 - Python 3.9+
-- Standard library only (no external dependencies)
+- No external dependencies (uses only standard library)
 
-## License
+## Limitations
 
-This project is released under [appropriate license].
+- Keys cannot contain `=` characters (first `=` is used as delimiter)
+- Complex nested structures may require careful shell escaping
+- Type inference is limited to Python literal types
