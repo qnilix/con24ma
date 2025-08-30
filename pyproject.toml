@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "con24ma"
-version = "0.3.0"
+version = "1.0.0"
 dependencies = []
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 authors = [
   {name = "Linqa Kiriyama", email = "kyamlinqa@gmail.com"},
 ]
@@ -27,4 +27,4 @@ Repository = "https://github.com/qaiLN/con24ma.git"
 Changelog = "https://github.com/qaiLN/con24ma/blob/master/CHANGELOG.md"
 
 [project.scripts]
-pandapp = "conbu:main"
+pandapp = "con24ma:main"
