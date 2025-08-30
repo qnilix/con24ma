@@ -51,24 +51,6 @@ class DictField(ArgField):
                          action='parse_kwargs', nargs = '*', **kwargs)
 
 
-class PathField:
-
-    def __init__(self, value, 
-                 dest: Optional[Union[list[str]|str]] = None, 
-                 as_rootdir: bool = False,
-                 as_cfgpath: bool = False, **kwargs):
-        self.value = getpath(value)
-        self.dest = dest
-
-        self.admin = ''
-        if self.value.is_file():
-            if as_cfgpath: self.admin
-        elif as_rootdir:
-            self.admin = 'dir' 
-
-        self.args_add_argument = argument_of_AP(**kwargs)
-
-
 def _set_value(default = None, default_factory = None, **kwargs):
     if default is not None: return default, kwargs
     if default_factory is not None: return default_factory, kwargs

@@ -8,9 +8,8 @@ This module defines field types that extend basic dataclass fields with argparse
 
 ## Features
 
-- **Type-Specific Fields**: Specialized fields for different data types (args, dicts, paths)
+- **Type-Specific Fields**: Specialized fields for different data types (args, dicts)
 - **Flexible Argument Configuration**: Support for custom destinations, actions, and parsing options
-- **Path Handling**: Intelligent path field with file/directory detection
 - **Dictionary Parsing**: Built-in support for key=value argument parsing
 - **Type Conversion**: Automatic type conversion with built-in Python type support
 
@@ -22,10 +21,10 @@ Base field type for standard command-line arguments.
 
 ```python
 from dataclasses import dataclass
-from your_module import ArgField
+from con24ma import DataClassConfig, ArgField
 
 @dataclass
-class Config:
+class Config(DataClassConfig):
     name: str = ArgField("default_name", help="Application name")
     port: int = ArgField(8080, help="Port number")
     debug: bool = ArgField(False, help="Enable debug mode")
@@ -44,13 +43,48 @@ class Config:
 
 - `__bool__()`, `__float__()`, `__int__()`, `__str__()`: Type conversion support
 
+#### ArgField Example Usage
+
+```python
+@dataclass
+class AppConfig(DataClassConfig):
+    # Basic arguments
+    name: str = ArgField("myapp", help="Application name")
+    port: int = ArgField(8080, help="Port to listen on")
+    debug: bool = ArgField(False, help="Enable debug mode")
+    
+    # Multiple argument names
+    verbose: bool = ArgField(False, 
+                            dest=['-v', '--verbose'], 
+                            help="Enable verbose output")
+    
+    # Choices constraint
+    log_level: str = ArgField("INFO", 
+                             choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+                             help="Logging level")
+    
+    # Required argument
+    api_key: str = ArgField(None, 
+                           required=True,
+                           help="API key (required)")
+    
+    # Multiple values
+    files: list = ArgField([], 
+                          nargs='+',
+                          help="Input files")
+```
+
 ### `DictField`
 
 Specialized field for parsing dictionary arguments using key=value syntax.
 
+- Automatically sets `action='parse_kwargs'` and `nargs='*'`
+- Parses `key=value` pairs into dictionary
+- Supports type inference for values using `ast.literal_eval()`
+
 ```python
 @dataclass
-class Config:
+class Config(DataClassConfig):
     # Parse arguments like: --config key1=value1 key2=value2
     config: dict = DictField({}, help="Configuration key=value pairs")
     
@@ -59,40 +93,38 @@ class Config:
                               help="Application settings")
 ```
 
-#### Features
-- Automatically sets `action='parse_kwargs'` and `nargs='*'`
-- Parses `key=value` pairs into dictionary
-- Supports type inference for values
+#### CLI Usage Examples
 
-#### Command Line Usage
 ```bash
 python script.py --config host=localhost port=8080 debug=True
 # Results in: {"host": "localhost", "port": 8080, "debug": True}
 ```
 
-### `PathField`
+#### Type Conversion
 
-Specialized field for file and directory path arguments with intelligent path handling.
+The DictField automatically recognizes the following types:
 
-```python
-@dataclass
-class Config:
-    input_file: str = PathField("input.txt", help="Input file path")
-    output_dir: str = PathField("./output", as_rootdir=True, help="Output directory")
-    config_file: str = PathField("config.json", as_cfgpath=True, help="Config file")
+- **Integers**: `42` → `42` (int)
+- **Floats**: `3.14` → `3.14` (float)  
+- **Booleans**: `True`, `False` → `True`, `False` (bool)
+- **Lists**: `[1,2,3]` → `[1, 2, 3]` (list)
+- **Dictionaries**: `{"key":"value"}` → `{"key": "value"}` (dict)
+- **Strings**: Everything else → kept as string
+
+#### DictField Examples
+
+```bash
+# Basic usage
+python script.py --params name=test age=25 active=True
+# Result: {'name': 'test', 'age': 25, 'active': True}
+
+# Mixed types
+python script.py --params host=localhost port=8080 debug=False timeout=30.5
+# Result: {'host': 'localhost', 'port': 8080, 'debug': False, 'timeout': 30.5}
+
+# Complex types (be careful with shell escaping)
+python script.py --params "data=[1,2,3]" "config={\"key\":\"value\"}"
 ```
-
-#### Parameters
-- `value`: Default path value
-- `dest`: Custom argument name(s)
-- `as_rootdir`: Boolean flag for directory handling
-- `as_cfgpath`: Boolean flag for configuration file handling
-- `**kwargs`: Additional argparse arguments
-
-#### Features
-- Uses `getpath()` utility for path resolution
-- Automatic file/directory detection
-- Special handling for configuration files and root directories
 
 ## Utility Functions
 
@@ -118,16 +150,16 @@ field1 = argfield(default="value", help="Help text")
 field2 = argfield(default_factory=list, help="List field")
 ```
 
-## Usage Examples
+## Practical Usage Examples
 
 ### Basic Configuration
 
 ```python
 from dataclasses import dataclass
-from your_module import ArgField, DictField, PathField
+from con24ma import DataClassConfig, ArgField, DictField
 
 @dataclass
-class AppConfig:
+class AppConfig(DataClassConfig):
     # Basic arguments
     name: str = ArgField("myapp", help="Application name")
     port: int = ArgField(8080, help="Port to listen on")
@@ -135,17 +167,13 @@ class AppConfig:
     
     # Dictionary configuration
     settings: dict = DictField({}, help="Additional settings as key=value pairs")
-    
-    # Path handling
-    config_file: str = PathField("app.conf", as_cfgpath=True, help="Configuration file")
-    data_dir: str = PathField("./data", as_rootdir=True, help="Data directory")
 ```
 
 ### Advanced Field Configuration
 
 ```python
 @dataclass
-class AdvancedConfig:
+class AdvancedConfig(DataClassConfig):
     # Multiple argument names
     verbose: bool = ArgField(False, 
                             dest=['-v', '--verbose'], 
@@ -165,6 +193,10 @@ class AdvancedConfig:
     files: list = ArgField([], 
                           nargs='+',
                           help="Input files")
+    
+    # Dictionary with defaults
+    model_config: dict = DictField({"layers": 3, "units": 128}, 
+                                  help="Model configuration")
 ```
 
 ### Command Line Usage
@@ -176,11 +208,11 @@ python app.py --name "MyApp" --port 3000 --debug
 # With dictionary settings
 python app.py --settings timeout=30 retries=3 ssl=True
 
-# With paths
-python app.py --config-file /etc/myapp.conf --data-dir /var/data
-
 # Advanced options
 python app.py -v --log-level DEBUG --api-key abc123 --files file1.txt file2.txt
+
+# Model configuration
+python app.py --model-config layers=5 units=256 dropout=0.1
 ```
 
 ## Integration with DataClassConfig
@@ -192,42 +224,21 @@ These field types are designed to work seamlessly with the DataClassConfig syste
 class Config(DataClassConfig):
     app_name: str = ArgField("default", help="Application name")
     config: dict = DictField({}, help="Configuration parameters")
-    log_file: str = PathField("app.log", help="Log file path")
+    
+    @classmethod
+    def prep_parsed(cls, parsed: dict) -> dict:
+        # Custom validation/processing
+        if parsed.get('app_name') == 'forbidden':
+            raise ValueError("Invalid app name")
+        return parsed
 
 # Automatic parser generation and argument handling
 config, remaining = Config.parse_args()
 ```
 
-## Type Conversion
-
-ArgField supports automatic type conversion through magic methods:
-
-```python
-field = ArgField(42)
-print(str(field))    # "42"
-print(int(field))    # 42
-print(float(field))  # 42.0
-print(bool(field))   # True
-```
-
-## Dependencies
-
-- `con24ma.action`: For `opt_action()` function
-- `con24ma.pathutil`: For `getpath()` utility
-- Standard library: `typing`
-
 ## Notes
 
-- PathField appears to have some incomplete implementation (see `self.admin` assignment)
-- DictField automatically integrates with the kwargs parsing system
+- DictField automatically integrates with the kwargs parsing system via `ParseKwargs` action
 - All fields support the standard argparse argument options
 - Custom destinations allow for both short and long argument forms
-
-## Requirements
-
-- Python 3.9+
-- Dependencies: con24ma.action, con24ma.pathutil modules
-
-## License
-
-This project is released under [appropriate license].
+- Type conversion in DictField uses `ast.literal_eval()` for safety

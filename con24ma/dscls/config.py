@@ -2,7 +2,7 @@ import argparse
 from typing import Optional, Self, Union
 from dataclasses import asdict, dataclass, fields
 
-from .field import ArgField, DictField, PathField
+from .field import ArgField, DictField
 
 
 @dataclass
@@ -22,7 +22,7 @@ class BaseConfig:
     def asdict(self):
         temp = asdict(self)
         for k, v in temp.items():
-            if isinstance(v, DataClassConfig): temp[k] = asdict(v)
+            if isinstance(v, (BaseConfig, DataClassConfig)): temp[k] = asdict(v)
         return temp
 
 
