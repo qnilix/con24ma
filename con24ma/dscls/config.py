@@ -1,5 +1,5 @@
 import argparse
-from typing import Optional, Self
+from typing import Optional, Self, Union
 from dataclasses import asdict, dataclass, fields
 
 from .field import ArgField, DictField, PathField
@@ -9,12 +9,15 @@ from .field import ArgField, DictField, PathField
 class BaseConfig:
 
     @classmethod
-    def safe_build(cls, return_unused_kwargs: bool = True, **kwargs) -> tuple[Self, dict]:
+    def safe_build(cls, 
+                   return_unused_kwargs: bool = True, 
+                   **kwargs) -> Union[tuple[Self, dict]|Self]:
         safe_kwargs = dict()
         for _f in fields(cls):
             n = _f.name
             if n in kwargs.keys(): safe_kwargs[n] = kwargs.pop(n)
-        return cls(**safe_kwargs), kwargs
+        if return_unused_kwargs: return cls(**safe_kwargs), kwargs
+        return cls(**safe_kwargs)
     
     def asdict(self):
         temp = asdict(self)
@@ -24,20 +27,14 @@ class BaseConfig:
 
 
 @dataclass
-class DataClassConfig:
+class DataClassConfig(BaseConfig):
 
-    def asdict(self):
-        temp = asdict(self)
-        for k, v in temp.items():
-            if isinstance(v, DataClassConfig): temp[k] = asdict(v)
-        return temp
-
-    @classmethod
-    def get_parsercls(cls, **kwargs):
+    @staticmethod
+    def get_parsercls(**kwargs):
         return argparse.ArgumentParser(**kwargs)
     
     @classmethod
-    def get_parser(cls):
+    def get_parser(cls) -> argparse.ArgumentParser:
         parser = cls.get_parsercls()
         for _f in fields(cls):
             if not isinstance(_f.default, (ArgField, DictField)): continue
@@ -53,16 +50,18 @@ class DataClassConfig:
     
     @classmethod
     def parse_args(cls, 
-                   input_args: Optional[str] = None,
-                   kwargs: dict = {}):
+                   inputs: Optional[str] = None,
+                   base_dict: dict = {}):
         parser = cls.get_parser()
-        parsed, remain = parser.parse_known_args(input_args)
+        parsed, remain = parser.parse_known_args(inputs)
         parsed = cls.prep_parsed(vars(parsed))
-        kwargs.update(parsed)
+        base_dict.update(parsed)
         for _f in fields(cls):
-            if not hasattr(_f.default_factory, 'parse_args'): continue
-            if issubclass(_f.default_factory, DataClassConfig):
-                if _f.name in kwargs.keys(): kwargs.update(**kwargs.pop(_f.name))
-                kwargs[_f.name], remain = _f.default_factory.parse_args(remain, kwargs)
-        temp = dict((k.name, kwargs.pop(k.name, k.default)) for k in fields(cls))
+            default = _f.default_factory
+            if not hasattr(default, 'parse_args'): continue
+            if issubclass(default, DataClassConfig):
+                if _f.name in base_dict.keys():
+                    base_dict.update(**base_dict.pop(_f.name))
+                base_dict[_f.name], remain = default.parse_args(remain, base_dict)
+        temp = dict((k.name, base_dict.pop(k.name, k.default)) for k in fields(cls))
         return cls(**temp), remain
