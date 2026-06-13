@@ -8,7 +8,7 @@ def _root(init: Optional[str] = None):
 
 def joindir(path: pathlib.Path, join: str, mkdir: bool = False) -> pathlib.Path:
     path = path.joinpath(join)
-    path.mkdir(parents=True, exist_ok=mkdir)
+    if mkdir: path.mkdir(parents=True, exist_ok=True)
     return path
 
 def getpath(path: Union[pathlib.Path|str], mkdir: bool = False) -> pathlib.Path:
